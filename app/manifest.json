@@ -1,0 +1,10 @@
+{
+  "name": "驭光 NeuroLux",
+  "short_name": "NeuroLux",
+  "description": "脑波驱灯 · 意念驭光 — mobile control panel",
+  "start_url": "/app",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1120",
+  "theme_color": "#5b7eff"
+}

@@ -1,0 +1,188 @@
+/* ═══════════════════════════════════════════════════════════════
+   NeuroLux Dashboard — 明亮科技风  (zero-dependency beyond Chart.js)
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg:        #0b1120;
+  --surface:   #131c33;
+  --surface2:  #192545;
+  --border:    #1e3460;
+  --text:      #e0e8f8;
+  --dim:       #7b8bb0;
+  --accent:    #5b7eff;
+  --accent2:   #38bdf8;
+  --warm:      #f59e0b;
+  --green:     #10b981;
+  --red:       #ef4444;
+  --orange:    #f97316;
+  --font:      'PingFang SC','Microsoft YaHei','Segoe UI',system-ui,sans-serif;
+  --mono:      'JetBrains Mono','Fira Code','Consolas',monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── header ─────────────────────────────────────────────────────── */
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 28px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top:0; z-index:100;
+}
+.topbar .logo { font-size: 20px; font-weight: 800; color: var(--accent); }
+.topbar .logo span { color: var(--dim); font-weight: 400; margin-left: 6px; font-size: 14px; }
+.header-right { display:flex; align-items:center; gap:10px; font-size:13px; color:var(--dim); }
+.status-dot {
+  width:10px; height:10px; border-radius:50%; display:inline-block;
+  background:var(--green); transition: background .3s;
+}
+.status-dot.warn  { background: var(--orange); }
+.status-dot.bad   { background: var(--red); }
+
+/* ── signal quality gauge ──────────────────────────────────────── */
+.sig-gauge {
+  display: flex; align-items: center; gap: 8px;
+}
+.sig-bar-bg {
+  width: 80px; height: 10px; border-radius: 5px;
+  background: rgba(255,255,255,0.08);
+  display: inline-block; overflow: hidden;
+}
+.sig-bar-fill {
+  display: block; height: 100%; border-radius: 5px;
+  width: 100%;
+  background: var(--green);
+  transition: width .5s, background .5s;
+}
+.sig-bar-fill.warn { background: var(--orange); }
+.sig-bar-fill.bad  { background: var(--red); }
+.sig-text {
+  font-size: 12px; font-weight: 600;
+  color: var(--green); min-width: 70px;
+  transition: color .5s;
+}
+.sig-text.warn { color: var(--orange); }
+.sig-text.bad  { color: var(--red); }
+.sep { opacity:.3; }
+
+/* ── main grid ──────────────────────────────────────────────────── */
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 16px;
+  padding: 16px 24px;
+  flex: 1;
+  min-height: 0;  /* allow children to shrink */
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 280px;
+}
+.panel h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent2);
+  margin-bottom: 10px;
+  letter-spacing: .5px;
+  flex-shrink: 0;
+}
+
+.chart-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.chart-wrap canvas { width:100% !important; height:100% !important; }
+
+/* ── panel-A: radar ─────────────────────────────────────────────── */
+
+.radar-legend {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--accent);
+  margin-top: 8px;
+  transition: color .6s;
+  flex-shrink: 0;
+}
+
+/* ── panel-C: alpha ─────────────────────────────────────────────── */
+
+.alpha-value {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--warm);
+  margin-top: 8px;
+  text-shadow: 0 0 18px rgba(245,158,11,.4);
+  flex-shrink: 0;
+}
+
+/* ── panel-D: bulb ──────────────────────────────────────────────── */
+
+.bulb-area {
+  flex:1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.bulb-svg {
+  width: 140px; height: 200px;
+  transition: filter .8s;
+}
+.bulb-info {
+  text-align: center;
+  margin-top: 6px;
+}
+.bulb-label { font-size:16px; font-weight:700; color:var(--warm); }
+.bulb-temp  { font-size:12px; color:var(--dim); margin-left:8px; }
+
+/* ── footer ─────────────────────────────────────────────────────── */
+
+footer {
+  text-align: center;
+  padding: 14px 20px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--dim);
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+footer strong { color: var(--text); }
+footer .footer-tech { opacity: .5; }
+
+/* ── responsive ─────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .dash-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+  .panel { min-height: 240px; }
+}
