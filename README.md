@@ -30,3 +30,38 @@ network/tcp_server.py：异步 TCP 广播服务器（JSON line 协议）。
 web/dashboard.py：Flask 仪表盘与 SSE（实时状态、历史、手动覆盖）。
 
 
+
+配置（config.yaml）
+示例位于 。主要项：config.example.yaml
+
+serial.port： 串口路径或蓝牙格式 bt：MAC：channel（例如 bt：04：22：12：02：0D：C0：1）
+serial.baudrate / timeout：TGAM 默认 57600
+wiz.ip / port / timeout：WiZ 灯的 IP（可为空，程序会 discover）
+tcp.host / port：TCP 广播监听地址
+web.host / port：Flask 仪表盘监听地址（建议本地 127.0.0.1 或在内网）
+信号。*：attn_window，alpha_window，门槛alpha_open/关闭阈值，confirm_time，冷却时间，sleep_time
+replay.*：回放速度与是否循环
+logging.level：DEBUG/INFO/WARNING
+
+
+
+
+调试与诊断（常见问题）
+无法打开串口
+检查权限： groups 应包含 ;或使用 sudo 临时测试dialout
+检查设备： ls -la /dev/rfcomm0 或 /dev/ttyUSB0
+未检测到 TGAM 同步字（0xAA 0xAA）
+检查 TGAM 是否上电、接线是否正确，电极是否接触
+试用 tgam_read.py 或 tgam_detect.py ---仅扫描
+程序卡死或高 CPU
+检查是否在非阻塞读取模式下 busy-wait（可通过 top 观察）
+将 logging.level 设为 DEBUG 以查看日志
+WiZ 灯控制失败
+确认 WiZ 灯在同一网段并已连接;检查 discover/配置的 IP
+在 WiZController 中查看异常日志（网络超时）
+Web 仪表盘无法访问
+检查 web.host 配置（默认示例改为 127.0.0.1，改为 0.0.0.0 可 LAN 访问）
+检查防火墙或路由
+
+
+
