@@ -221,7 +221,3 @@ while True:
 - 使用 `sudo tcpdump -i tailscale0`/`-i eth0` 排查流量是否到达。
 - 只批准可信设备，代理加入 token 或 IP 白名单，保存并限制 iptables 规则。
 
----
-
-## 版权与作者
-原项目 NeuroLux 作者信息保留。附加 Tailscale 指南为 AI 协助整理，若需调整格式或拆分为独立文档（docs/）请告诉我。
