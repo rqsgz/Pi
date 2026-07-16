@@ -1,0 +1,45 @@
+logging:
+  level: INFO
+replay:
+  loop: false
+  speed: 1.0
+serial:
+  baudrate: 57600
+  port: /dev/rfcomm0
+  timeout: 0.5
+signal:
+  alpha_close_thresh: 55.0
+  alpha_open_thresh: 40.0
+  alpha_window: 40
+  attn_close_thresh: 40.0
+  attn_open_thresh: 50.0
+  attn_window: 10
+  confirm_time: 1.2
+  cooldown: 2.0
+  sleep_time: 60.0
+  inverted: false
+  adaptive: false
+  baseline_window: 120
+  close_ratio: 0.94
+  open_ratio: 0.98
+tcp:
+  enabled: true
+  host: 0.0.0.0
+  port: 9527
+web:
+  enabled: true
+  host: 0.0.0.0
+  port: 5000
+wiz:
+  ip: 192.168.1.11
+  port: 38899
+  timeout: 5.0
+
+# ── AI 脑波分析上位机 (scripts/ai_reporter.py) ──────────────
+reporter:
+  deepseek_api_key: "API密钥"
+  deepseek_model: "deepseek-chat"
+  email_to: "邮箱地址"
+  email_password: "邮箱授权码"
+  batch_size: 10
+  poll_interval_s: 0.5
