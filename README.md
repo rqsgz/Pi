@@ -2,7 +2,7 @@
 
 ![build](https://img.shields.io/badge/build-unknown-lightgrey.svg) ![python](https://img.shields.io/badge/python-3.8%2B-blue) ![license](https://img.shields.io/badge/license-MIT-lightgrey.svg)
 
-将脑电（TGAM/ThinkGear）信号映射为有意义的灯光行为（例如：睁眼专注 → 冷色高亮；闭眼放松 → 暖色变暗），并提供从采集到可视化的完整工具链��[...]
+将脑电（TGAM/ThinkGear）信号映射为有意义的灯光行为（例如：睁眼专注 → 冷色高亮；闭眼放松 → 暖色变暗），并提供从采集到可视化的完整工具链��[...] 
 
 ---
 
@@ -266,3 +266,115 @@ while True:
 - 若 EEG 数据包含敏感信息，邮件发送前考虑脱敏或提示隐私风险。
 
 ---
+
+## Dashboard：SSE / 线程安全 / 输入校验 总结与建议 ✨
+
+下面是针对 `web/dashboard.py`（及相似文件）整理后的清晰美观总结，包含原理、问题点、改进建议与操作清单，方便直接阅读或粘贴入 README：
+
+### 概览 🧭
+客户端（浏览器 / PWA） ⇄ Flask REST / SSE
+        ↑                          ↓
+        │                          │
+   [SSE 推送]                 [控制请求]
+        ↑                          ↓
+     DashboardState  ←──  主循环（TGAM 采集 + 灯控执行）
+        ↑
+   历史环形缓冲（deque） & 配置（STATE_COLORS）
+
+### 关键模块与职责（图标化）
+- 🧠 DashboardState（共享状态）
+  - 保存: attention / meditation / alpha_power / poor_signal / eyes_state / blink_count / eeg_bands / last_update
+  - 灯状态: LightSnapshot（brightness / color_temp / rgb / is_on / state_label）
+  - 历史: deque 环形缓冲（最大长度可配置）
+  - 建议: 把 pending override 纳入此对象并用 lock 保护，���免竞态。
+
+- 🌐 Flask API（web 接口）
+  - GET /api/state：当前快照
+  - GET /api/history?n=：最近 N 帧
+  - GET /api/stream：SSE 实时流
+  - POST /api/light/set、/api/presets/apply、/api/rgb/apply：手动或预设灯控
+  - 管理: /api/states-config（动态修改映射并持久化）
+
+- 🔁 SSE（Server-Sent Events）
+  - 作用: 把最新状态实时推送到前端
+  - 建议: 降低推送频率到 0.5–1s 或仅在状态变化时推送 + 心跳；使用 stream_with_context；发送 id、event、retry 字段。
+
+- 💾 配置持久化（config.yaml）
+  - 通过 PyYAML 保存 STATE_COLORS；若未安装 PyYAML，应优雅提示并继续运行。
+
+- 🛠 PWA（manifest + sw）
+  - 提供离线缓存与安装能力；sw.js 采用 stale-while-revalidate 策略，API 请求不缓存（合理）。
+
+### 主要问题与建议（优先级标注）
+- ⚠️ 线程竞态（高）
+  - 问题: 当前 `_pending_override` 为模块级 dict，API 并发写入与主循环读取时无锁保护。
+  - 建议: 将其移入 `DashboardState`，提供 `queue_override()` 与 `pop_override()`，并用 `self._lock` 保护。
+
+- ⚠️ SSE 频率不一致（中/高）
+  - 问题: 注释写 500 ms（2 Hz），实现 `time.sleep(0.15)` ≈ 150 ms（6–7 Hz）。
+  - 建议: 统一为 0.5–1s 或仅在状态变化时推送，添加心跳间隔（例如 5s）。
+
+- 🛡 安全性（高）
+  - 问题: 无鉴权的 POST 接口允许任意人控制灯（若在公网）。
+  - 建议: 加入简单 token 验证或仅允许内网访问；对管理接口做速率限制并记录审计日志。
+
+- ✅ 输入验证（中）
+  - 建议: 对 brightness (0–100)、rgb（三元组，0–255）与 color_temp 做严格检查；避免 `get_json(force=True)` 在非 JSON 请求时抛异常。
+
+- ℹ️ 数据格式（中）
+  - 建议: 在 `snapshot()` 返回 `last_update`（数值秒或毫秒整数）；`history()` 中保留数值型 `ts`（并额外提供格式化字符串，如有需要）。
+
+### 可直接采纳的代码片段（示例）
+- 把 pending override 移入 `DashboardState`：
+```python
+# DashboardState.__init__
+self._pending_override = {"pending": False, "brightness": None, "color_temp": None, "rgb": None}
+
+def queue_override(self, brightness=None, color_temp=None, rgb=None):
+    with self._lock:
+        self._pending_override.update({"brightness": brightness, "color_temp": color_temp, "rgb": rgb, "pending": True})
+
+def pop_override(self):
+    with self._lock:
+        p = dict(self._pending_override)
+        self._pending_override = {"pending": False, "brightness": None, "color_temp": None, "rgb": None}
+    return p
+```
+
+- SSE 改进思路（简化）：
+```python
+from flask import stream_with_context
+
+@app.route('/api/stream')
+def api_stream():
+    @stream_with_context
+    def event_stream():
+        last_ts = None
+        heartbeat = 5.0
+        while True:
+            snap = state.snapshot()
+            if snap.get('last_update') != last_ts:
+                last_ts = snap.get('last_update')
+                yield f"id: {int(last_ts*1000)}\n"
+                yield f"data: {json.dumps(snap, ensure_ascii=False)}\n\n"
+            else:
+                yield ":\n\n"  # comment-style heartbeat
+                time.sleep(heartbeat)
+            time.sleep(0.1)
+    return Response(event_stream(), mimetype='text/event-stream', headers={...})
+```
+
+### 优先级行动清单（短）
+1. 必做：把 `_pending_override` 迁入 `DashboardState` 并加锁；在 API 中改为 `state.queue_override(...)`。
+2. 必做：在 `snapshot()` 中返回 `last_update`；将 `history()` 的 `ts` 保留数值格式。
+3. 高优先级：在公开部署前为 POST 接口加入最小鉴权或仅允许内网访问。
+4. 中优先级：把 SSE 改为“变更触发 + 心跳”，使用 `stream_with_context`。
+5. 中优先级：统一输入验证（brightness、rgb、color_temp），并改用 `get_json(silent=True)`。
+
+---
+
+如果你希望，我可以：
+- 把上面的补丁直接推到代码（我已经准备好变更），或
+- 仅把这份说明保留在 README（已添加），方便后续人工合并。
+
+（我已将这段“Dashboard：SSE / 线程安全 / 输入校验 总结与建议”内容追加到 README。若需要我现在把代码改动写入仓库文件，我也可以在一个独立分支上提交并创建 PR。）
