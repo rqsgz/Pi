@@ -269,8 +269,6 @@ while True:
 
 ## Dashboard：SSE / 线程安全 / 输入校验 总结与建议 ✨
 
-下面是针对 `web/dashboard.py`（及相似文件）整理后的清晰美观总结，包含原理、问题点、改进建议与操作清单，方便直接阅读或粘贴入 README：
-
 ### 概览 🧭
 客户端（浏览器 / PWA） ⇄ Flask REST / SSE
         ↑                          ↓
@@ -372,9 +370,3 @@ def api_stream():
 5. 中优先级：统一输入验证（brightness、rgb、color_temp），并改用 `get_json(silent=True)`。
 
 ---
-
-如果你希望，我可以：
-- 把上面的补丁直接推到代码（我已经准备好变更），或
-- 仅把这份说明保留在 README（已添加），方便后续人工合并。
-
-（我已将这段“Dashboard：SSE / 线程安全 / 输入校验 总结与建议”内容追加到 README。若需要我现在把代码改动写入仓库文件，我也可以在一个独立分支上提交并创建 PR。）
